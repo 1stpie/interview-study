@@ -407,7 +407,7 @@ fun interface OnRouteListener {                  // Java와 Kotlin 모두 람다
 ```
 
 **꼬리 질문**
-- **Java에서 Kotlin의 internal은 어떻게 보입니까?** JVM에는 internal이 없어 public으로 컴파일되고 이름이 맹글링됩니다. Java에서 부를 수는 있으므로 접근 제어 경계로 기대하면 안 됩니다.
+- **Java에서 Kotlin의 internal은 어떻게 보입니까?** JVM에는 internal이 없어 public으로 컴파일되고, internal 멤버는 바이트코드에서 이름이 맹글링됩니다. internal 클래스의 public 멤버는 맹글링되지 않습니다. Java에서 부를 수는 있으므로 접근 제어 경계로 기대하면 안 됩니다.
 - **Java가 Kotlin 함수에 null을 넘기면?** public 함수의 non-null 파라미터에는 컴파일러가 진입 검사를 넣어 그 자리에서 NPE가 납니다. 잘못된 값이 경계에서 바로 드러나는 셈입니다.
 - **어떤 파일부터 변환합니까?** 상태 위주의 데이터 모델, 테스트 코드, 확장 함수로 바꿀 유틸리티 클래스가 먼저입니다. Android 공식 도입 가이드가 이 셋을 시작점으로 들고, 팀이 익숙해지면 Fragment, Activity, ViewModel 같은 큰 구성 요소로 넓히라고 합니다. 안정적이고 거의 바뀌지 않는 Java 코드는 경계 어노테이션만 붙이고 두는 것도 선택지입니다.
 
@@ -541,7 +541,7 @@ suspend fun search(q: String): SearchResult = try {
 
 **꼬리 질문**
 - **Result를 모든 계층에 쓰면?** 실패 종류가 Throwable 하나로 뭉개져 UI가 is 검사로 예외 타입을 다시 추측하게 됩니다. 도메인 실패는 sealed 타입으로 나누는 편이 명확합니다.
-- **CoroutineExceptionHandler가 async의 예외를 받습니까?** 받지 않습니다. 핸들러는 루트 코루틴의 처리되지 않은 예외에만 불리고, async의 예외는 await하는 쪽에서 처리합니다.
+- **CoroutineExceptionHandler가 async의 예외를 받습니까?** async에 단 핸들러는 효과가 없습니다. 루트 async의 예외는 await하는 쪽에서 처리하고, 다른 코루틴의 자식인 async의 예외는 부모로 넘어가 루트 코루틴의 핸들러가 받습니다.
 - **Java에서 호출될 함수는 어떻게 합니까?** @Throws로 checked 예외를 선언해야 Java 호출자가 catch할 수 있습니다.
 
 ### 17. 서버 JSON 파싱에 kotlinx.serialization, Moshi, Gson은 어떻게 다르고, Gson이 Kotlin에서 위험한 이유는 무엇입니까?
@@ -3304,7 +3304,7 @@ class PlaceAdapter : ListAdapter<PlaceUi, PlaceViewHolder>(Diff) {
 
 시작 시간은 콜드 스타트를 기준으로 TTID와 TTFD 두 지표로 봅니다. 현장 값은 Android vitals와 ApplicationStartInfo로, 개발 중 값은 Macrobenchmark의 StartupTimingMetric으로 재고, 줄일 때는 Application.onCreate와 ContentProvider에 몰린 초기화를 덜어 내고, 첫 화면을 캐시로 먼저 그리고, Baseline Profile로 첫 실행의 코드 실행 비용을 줄입니다.
 
-시작은 세 가지로 나뉩니다. 콜드 스타트는 프로세스가 없어서 프로세스 생성, Application 생성, 첫 Activity 생성과 첫 그리기를 모두 하는 경우입니다. 웜 스타트는 프로세스는 남아 있지만 Activity를 onCreate부터 다시 만드는 경우이고, 시스템이 앱을 메모리에서 내보낸 뒤 저장된 상태로 다시 여는 경우도 공식 문서는 웜 스타트로 분류합니다. 핫 스타트는 Activity가 메모리에 남아 있어 앞으로 가져오기만 하는 경우입니다. 콜드 스타트를 줄이면 나머지도 함께 좋아지므로 콜드 스타트를 기준으로 최적화합니다. TTID는 첫 프레임이 그려질 때까지의 시간으로 프레임워크가 자동으로 보고하고, Logcat의 ActivityManager Displayed 줄로 볼 수 있습니다. TTFD는 네트워크나 디스크에서 읽는 주요 콘텐츠까지 보여 앱을 쓸 수 있게 된 시간이라 앱이 reportFullyDrawn()으로 알려야 하고, Compose에서는 ReportDrawnWhen이나 ReportDrawnAfter를 씁니다. Play Console은 TTID 기준으로 콜드 5초, 웜 2초, 핫 1초 이상을 느린 시작으로 셉니다.
+시작은 세 가지로 나뉩니다. 콜드 스타트는 프로세스가 없어서 프로세스 생성, Application 생성, 첫 Activity 생성과 첫 그리기를 모두 하는 경우입니다. 웜 스타트는 프로세스는 남아 있지만 Activity를 onCreate부터 다시 만드는 경우이고, 시스템이 앱을 메모리에서 내보낸 뒤 저장된 상태로 다시 여는 경우도 공식 문서는 웜 스타트로 분류합니다. 핫 스타트는 Activity가 메모리에 남아 있어 앞으로 가져오기만 하는 경우입니다. 콜드 스타트를 줄이면 나머지도 함께 좋아지므로 콜드 스타트를 기준으로 최적화합니다. TTID는 첫 프레임이 그려질 때까지의 시간으로 프레임워크가 자동으로 보고하고, Logcat의 ActivityManager Displayed 줄로 볼 수 있습니다. TTFD는 네트워크나 디스크에서 읽는 주요 콘텐츠까지 보여 앱을 쓸 수 있게 된 시간이라 앱이 reportFullyDrawn()으로 알려야 하고, Compose에서는 ReportDrawnWhen이나 ReportDrawnAfter를 씁니다. Play Console 도움말은 TTID 기준으로 콜드 5초, 웜 2초, 핫 1초 이상을 느린 시작으로 셉니다. developer.android.com의 vitals 문서는 핫 기준을 1.5초로 적어 두 문서가 다릅니다.
 
 개발 중에는 Macrobenchmark에서 StartupMode.COLD로 여러 번 실행해 timeToInitialDisplayMs와 timeToFullDisplayMs의 중앙값을 비교하고, 에뮬레이터가 아닌 실기기에서 잽니다. 어디가 느린지는 Perfetto 트레이스의 Android App Startups 구간 안에서 bindApplication, Activity 생성, 첫 컴포지션 중 무엇이 긴지 봅니다. 현장에서는 vitals의 시작 시간 분포를 보고, Android 15부터는 ApplicationStartInfo로 이번 시작이 콜드, 웜, 핫 중 무엇이었는지, 프로세스가 무엇 때문에 시작되었는지, 단계별 시각을 앱이 직접 모을 수 있습니다. Android 16은 시작을 일으킨 컴포넌트 유형을 알려 주는 getStartComponent()를 더했습니다.
 
@@ -5332,7 +5332,7 @@ val places: StateFlow<List<Place>> = cameraIdle             // 이동이 끝났�
 
 핵심 결정은 세 가지입니다. 첫째, 저장값을 먼저 보여 주면 빠르지만 끝난 이벤트 배너가 잠깐 보일 수 있으므로, 응답에 섹션별 만료 시각을 담아 만료된 항목은 저장값이어도 그리지 않습니다. 둘째, 새 데이터가 들어오며 화면이 밀리지 않게 섹션마다 높이를 미리 잡고 LazyColumn 항목에 안정적인 key를 줍니다. 누르려던 자리가 밀리면 사용자가 엉뚱한 것을 누릅니다. 셋째, 첫 프레임 전에 할 일을 줄입니다. Application.onCreate의 초기화를 덜어 내고 지도나 광고 같은 무거운 SDK는 첫 프레임 뒤에 초기화하며, 홈 진입 흐름을 Baseline Profile 생성 테스트에 넣습니다(6절의 앱 시작 시간 문항). WorkManager 주기 작업으로 홈 구성을 미리 받아 두는 방법도 있지만, 데이터와 배터리를 쓰는 만큼 다음 실행에서 실제로 쓰이는 비율을 보고 정합니다.
 
-측정과 운영은 TTID와 TTFD로 합니다. TTFD는 최근 목적지와 홈 구성이 저장값이든 새 응답이든 다 그려졌을 때 ReportDrawnWhen으로 보고하고 실시간 정보는 기다리지 않습니다. 실시간 정보까지 기다리면 TTFD가 앱이 아니라 서버 지연을 재게 됩니다. 개발 중에는 Macrobenchmark의 StartupTimingMetric으로 변경마다 비교하고, 현장에서는 Android vitals의 느린 시작 비율(콜드 5초, 웜 2초, 핫 1초 이상)과 Android 15부터 쓸 수 있는 ApplicationStartInfo의 단계별 시각을 봅니다. 섹션마다 저장값으로 그렸는지 새 응답으로 그렸는지와 그린 시각을 남기면 어느 섹션이 첫 화면을 늦추는지 바로 보입니다.
+측정과 운영은 TTID와 TTFD로 합니다. TTFD는 최근 목적지와 홈 구성이 저장값이든 새 응답이든 다 그려졌을 때 ReportDrawnWhen으로 보고하고 실시간 정보는 기다리지 않습니다. 실시간 정보까지 기다리면 TTFD가 앱이 아니라 서버 지연을 재게 됩니다. 개발 중에는 Macrobenchmark의 StartupTimingMetric으로 변경마다 비교하고, 현장에서는 Android vitals의 느린 시작 비율(Play Console 도움말 기준 콜드 5초, 웜 2초, 핫 1초 이상, developer.android.com 문서는 핫 1.5초)과 Android 15부터 쓸 수 있는 ApplicationStartInfo의 단계별 시각을 봅니다. 섹션마다 저장값으로 그렸는지 새 응답으로 그렸는지와 그린 시각을 남기면 어느 섹션이 첫 화면을 늦추는지 바로 보입니다.
 
 **꼬리 질문**
 - **홈 API가 장애로 응답하지 않으면?** 저장된 구성으로 그린 화면을 그대로 두고, 섹션별 타임아웃이 지나면 실시간 섹션만 숨기거나 다시 시도 버튼으로 바꿉니다. 화면 전체를 오류로 바꾸지 않고, 재시도는 지수 백오프와 지터로 해 장애가 풀리는 순간 요청이 몰리지 않게 합니다.
@@ -5366,7 +5366,7 @@ val places: StateFlow<List<Place>> = cameraIdle             // 이동이 끝났�
 |---|---|---|---|
 | 크래시 | R8을 켠 빌드의 UI 테스트 | vitals, 크래시 수집 도구, ApplicationExitInfo | 나쁜 동작 기준: user-perceived crash rate 전체 1.09%, 기기별 8% |
 | ANR | StrictMode | vitals, ApplicationExitInfo | 나쁜 동작 기준: user-perceived ANR rate 전체 0.47%, 기기별 8% |
-| 시작 | Macrobenchmark StartupTimingMetric | vitals, ApplicationStartInfo | 느린 시작: 콜드 5초, 웜 2초, 핫 1초 이상 |
+| 시작 | Macrobenchmark StartupTimingMetric | vitals, ApplicationStartInfo | 느린 시작: 콜드 5초, 웜 2초, 핫 1초 이상(Play Console 도움말 기준, developer.android.com 문서는 핫 1.5초) |
 | 프레임 | Macrobenchmark FrameTimingMetric | JankStats, vitals | excessive slow frames: 16ms를 넘은 프레임이 50%를 넘는 일일 세션의 비율 |
 | 배터리 | Power Profiler, PowerMetric | vitals excessive partial wake locks | 노출 영향: 24시간 중 2시간 이상 보유한 세션이 28일간 5% 초과 |
 | 메모리 | LeakCanary, 힙 덤프 | vitals memory usage, ProfilingManager | RAM 등급과 앱 상태별 기준, 넘으면 2027년 2월부터 노출 영향 가능 |
